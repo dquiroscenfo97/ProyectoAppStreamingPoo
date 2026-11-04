@@ -10,7 +10,7 @@ public class Main {
 
         Usuario primerUsuario = new Usuario("pepe@gmail.com", "pepe22", "pepe22!*", "Pepe Gonzalez", LocalDate.of(1998, 10, 22), "Costarricense", "126600754", "Ruta de imagen", 5000.65);
 
-        Administrador admin = new Administrador("Admin@gmail.com", "admin", "admin2026*$!");
+        Administrador admini = new Administrador("Admin@gmail.com", "admin", "admin2026*$!");
 
         Aplicacion app = new Aplicacion();
 
@@ -22,7 +22,7 @@ public class Main {
 
         app.registrarUsuario(primerUsuario);
 
-        app.registrarAdministrador(admin);
+        app.registrarAdministrador(admini);
 
         ListaReproduccion listaFavorita = primerUsuario.crearLista("Mis favoritas");
 
