@@ -1,10 +1,12 @@
+package cr.ac.ucenfotec.bl.entidades;
+
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class Usuario {
+public class Usuario extends Cuenta {
 
     //Constantes
 
@@ -15,9 +17,6 @@ public class Usuario {
 
     //Atributos
 
-    private String correoElectronico;
-    private String nombreUsuario;
-    private String contrasenia;
     private String nombreCompleto;
     private LocalDate fechaNacimiento;
     private String nacionalidad;
@@ -33,9 +32,7 @@ public class Usuario {
 
     //Constructor completo
     public Usuario(String correoElectronico, String nombreUsuario, String contrasenia, String nombreCompleto, LocalDate fechaNacimiento, String nacionalidad, String cedula, String avatar, double saldo) {
-        setCorreoElectronico(correoElectronico);
-        setNombreUsuario(nombreUsuario);
-        setContrasenia(contrasenia);
+        super(correoElectronico, nombreUsuario, contrasenia);
         setNombreCompleto(nombreCompleto);
         setFechaNacimiento(fechaNacimiento);
         setNacionalidad(nacionalidad);
@@ -47,39 +44,6 @@ public class Usuario {
     }
 
     //Setters y getters
-
-    public String getCorreoElectronico() {
-        return correoElectronico;
-    }
-
-    public void setCorreoElectronico(String correoElectronico) {
-        if (correoElectronico == null || correoElectronico.trim().isEmpty()) {
-            throw new IllegalArgumentException("El correo electronico no puede ser nulo ni vacio");
-        }
-        this.correoElectronico = correoElectronico;
-    }
-
-    public String getNombreUsuario() {
-        return nombreUsuario;
-    }
-
-    public void setNombreUsuario(String nombreUsuario) {
-        if (nombreUsuario == null || nombreUsuario.trim().isEmpty()) {
-            throw new IllegalArgumentException("El nombre de usuario no puede ser nulo ni vacio");
-        }
-        this.nombreUsuario = nombreUsuario;
-    }
-
-    private String getContrasenia() {
-        return contrasenia;
-    }
-
-    private void setContrasenia(String contrasenia) {
-        if (!esContraseniaValida(contrasenia)) {
-            throw new IllegalArgumentException("La contrasenia debe tener de 8 a 12 caracteres, con mayuscula, minuscula, numero y caracter especial");
-        }
-        this.contrasenia = contrasenia;
-    }
 
     public String getNombreCompleto() {
         return nombreCompleto;
@@ -130,7 +94,12 @@ public class Usuario {
     }
 
     public void setAvatar(String avatar) {
-        this.avatar = avatar;
+        // Si es nulo o está vacío, asignamos la imagen predeterminada
+        if (avatar == null || avatar.trim().isEmpty()) {
+            this.avatar = "imagenes/avatar_predeterminado.png"; // Ruta o nombre del archivo por defecto
+        } else {
+            this.avatar = avatar;
+        }
     }
 
     public double getSaldo() {
@@ -148,38 +117,26 @@ public class Usuario {
         return listasReproduccion;
     }
 
-    private void setListasReproduccion(ArrayList<ListaReproduccion> listasReproduccion) {
-        if (listasReproduccion == null) {
-            throw new IllegalArgumentException("Las listas de reproduccion no pueden ser nulas");
-        }
-        this.listasReproduccion = listasReproduccion;
-    }
-
     public ArrayList<Cancion> getColeccionCanciones() {
         return coleccionCanciones;
     }
 
-    private void setColeccionCanciones(ArrayList<Cancion> coleccionCanciones) {
-        if (coleccionCanciones == null) {
-            throw new IllegalArgumentException("La coleccion de canciones no puede ser nula");
-        }
-        this.coleccionCanciones = coleccionCanciones;
-    }
-
     //Utilidades
+
     @Override
     public String toString(){
-        return  "\nCorreo Electronico: " + correoElectronico +
-                "\nNombre de usuario: " + nombreUsuario +
+        return  "\nCorreo Electrónico: " + this.correoElectronico +
+                "\nNombre de usuario: " + this.nombreUsuario +
                 "\nNombre Completo: " + nombreCompleto +
                 "\nFecha de nacimiento: " + fechaNacimiento +
                 "\nNacionalidad: " + nacionalidad +
                 "\nCédula: " + cedula +
                 "\nAvatar: " + avatar +
-                "\nSaldo: " + saldo +
-                "\nListas de reproduccion: " + listasReproduccion +
-                "\nColecciones: " + coleccionCanciones;
+                "\nSaldo: $" + saldo +
+                "\nListas de reproducción: " + listasReproduccion.size() + " listas" +
+                "\nColección de canciones: " + coleccionCanciones.size() + " canciones";
     }
+
 
     public boolean equals(Usuario usuario){
         if (usuario == null) {
@@ -188,14 +145,12 @@ public class Usuario {
         return this.correoElectronico.equals(usuario.correoElectronico) && this.nombreUsuario.equals(usuario.nombreUsuario);
     }
 
-    //Validaciones
-
-    public static boolean esContraseniaValida(String contrasenia) {
-        if (contrasenia == null) {
-            return false;
-        }
-        return contrasenia.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,12}$");
+    @Override
+    public String getRol() {
+        return "cr.ac.ucenfotec.bl.entidades.Usuario";
     }
+
+    //Validaciones
 
     public static boolean esMayorDeEdad(LocalDate fechaNacimiento) {
         if (fechaNacimiento == null || fechaNacimiento.isAfter(LocalDate.now())) {
@@ -206,24 +161,45 @@ public class Usuario {
 
     //Operaciones
 
-    public boolean agregarCancion(Cancion c) {
-        if (c == null || poseeCancion(c)) {
+    public boolean agregarCancion(Cancion cancion) {
+        if (cancion == null || esDuenoDe(cancion)) {
             return false;
         }
-        if (saldo < c.getPrecio()) {
+        if (saldo < cancion.getPrecio()) {
             return false;
         }
-        saldo = redondearDosDecimales(saldo - c.getPrecio());
-        coleccionCanciones.add(c);
-        c.incrementarVecesComprada();
+        saldo = redondearDosDecimales(saldo - cancion.getPrecio());
+        coleccionCanciones.add(cancion);
+        cancion.incrementarVecesComprada();
         return true;
+    }
+
+    /**
+     * Agrega una canción a una lista de reproducción específica del usuario.
+     * Valida que el usuario haya comprado la canción previamente.
+     */
+    public boolean agregarCancionALista(String nombreLista, Cancion cancion) {
+        if (cancion == null) {
+            return false;
+        }
+
+        if (!esDuenoDe(cancion)) {
+            return false; // No está en su colección, no puede agregarla a la lista
+        }
+
+        ListaReproduccion lista = buscarLista(nombreLista);
+        if (lista == null) {
+            return false;
+        }
+
+        return lista.agregarCancion(cancion);
     }
 
     public boolean calificarCancion(Cancion c, double calificacion) {
         if (c == null || calificacion < 0.0 || calificacion > 5.0) {
             return false;
         }
-        if (!poseeCancion(c)) {
+        if (!esDuenoDe(c)) {
             return false;
         }
         c.agregarCalificacion(calificacion);
@@ -235,23 +211,6 @@ public class Usuario {
             return false;
         }
         saldo = redondearDosDecimales(saldo + monto);
-        return true;
-    }
-
-    public boolean modificarContrasenia(String actual, String nueva, String confirmacion) {
-        if (actual == null || nueva == null || confirmacion == null) {
-            return false;
-        }
-        if (!actual.equals(this.contrasenia)) {
-            return false;
-        }
-        if (!nueva.equals(confirmacion) || nueva.equals(this.contrasenia)) {
-            return false;
-        }
-        if (!esContraseniaValida(nueva)) {
-            return false;
-        }
-        this.contrasenia = nueva;
         return true;
     }
 
@@ -320,9 +279,9 @@ public class Usuario {
 
     //Auxiliares
 
-    private boolean poseeCancion(Cancion c) {
+    public boolean esDuenoDe(Cancion cancion) {
         for (Cancion propia : coleccionCanciones) {
-            if (propia.equals(c)) {
+            if (propia.equals(cancion)) {
                 return true;
             }
         }
@@ -332,4 +291,5 @@ public class Usuario {
     private static double redondearDosDecimales(double valor) {
         return Math.round(valor * 100.0) / 100.0;
     }
+
 }

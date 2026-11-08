@@ -1,19 +1,34 @@
+package cr.ac.ucenfotec.bl.controlador;
+
+import cr.ac.ucenfotec.bl.entidades.Cuenta;
+import cr.ac.ucenfotec.bl.entidades.Usuario;
+import cr.ac.ucenfotec.bl.entidades.Administrador;
+import cr.ac.ucenfotec.bl.entidades.Cancion;
+import cr.ac.ucenfotec.bl.entidades.ListaReproduccion;
+import cr.ac.ucenfotec.bl.entidades.ColaReproduccion;
+
+import cr.ac.ucenfotec.bl.entidades.*;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Objects;
 import java.time.Period;
 import java.util.List;
-import java.util.Map;
+
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import java.io.File;
 
 public class Aplicacion {
 
     //Atributos
 
-    private ArrayList<Cancion> catalogoCanciones;
-    private ArrayList<Usuario> listaUsuarios;
-    private ArrayList<Administrador> listaAdministradores;
+    private List<Cancion> catalogoCanciones;
+    private List<Usuario> listaUsuarios;
+    private List<Administrador> listaAdministradores;
+    private ColaReproduccion colaReproduccion;
 
     //Métodos
 
@@ -26,33 +41,23 @@ public class Aplicacion {
         catalogoCanciones = new ArrayList<>();
         listaUsuarios = new ArrayList<>();
         listaAdministradores = new ArrayList<>();
+        colaReproduccion = new ColaReproduccion();
     }
 
     //Setters y getters
 
-    public ArrayList<Cancion> getCatalogoCanciones() {
+    public List<Cancion> getCatalogoCanciones() {
         return catalogoCanciones;
     }
 
-    private void setCatalogoCanciones(ArrayList<Cancion> catalogoCanciones) {
-        this.catalogoCanciones = catalogoCanciones;
-    }
-
-    public ArrayList<Usuario> getListaUsuarios() {
+    public List<Usuario> getListaUsuarios() {
         return listaUsuarios;
     }
 
-    private void setListaUsuarios(ArrayList<Usuario> listaUsuarios) {
-        this.listaUsuarios = listaUsuarios;
-    }
-
-    public ArrayList<Administrador> getListaAdministradores() {
+    public List<Administrador> getListaAdministradores() {
         return listaAdministradores;
     }
 
-    private void setListaAdministradores(ArrayList<Administrador> listaAdministradores) {
-        this.listaAdministradores = listaAdministradores;
-    }
     //Utilidades
 
     @Override
@@ -90,35 +95,7 @@ public class Aplicacion {
         }
     }
 
-    /**
-     * Valida que una contraseña cumpla con los requisitos de seguridad.
-     * Debe tener entre 8 y 12 caracteres, al menos una mayúscula,
-     * una minúscula, un número y un carácter especial.
-     */
-    public static boolean validarFormatoContrasenia(String contrasenia) {
-        if (contrasenia == null || contrasenia.length() < 8 || contrasenia.length() > 12) {
-            return false;
-        }
 
-        boolean tieneMinuscula = false;
-        boolean tieneMayuscula = false;
-        boolean tieneNumero = false;
-        boolean tieneEspecial = false;
-
-        for (char c : contrasenia.toCharArray()) {
-            if (Character.isLowerCase(c)) {
-                tieneMinuscula = true;
-            } else if (Character.isUpperCase(c)) {
-                tieneMayuscula = true;
-            } else if (Character.isDigit(c)) {
-                tieneNumero = true;
-            } else {
-                tieneEspecial = true;
-            }
-        }
-
-        return tieneMinuscula && tieneMayuscula && tieneNumero && tieneEspecial;
-    }
 
     public static int calcularEdad(LocalDate fechaNacimiento){
         if(fechaNacimiento == null){
@@ -133,7 +110,7 @@ public class Aplicacion {
     }
 
     public boolean hayAdministradorRegistrado () {
-        return listaAdministradores.isEmpty();
+        return !listaAdministradores.isEmpty();
     }
 
     public boolean registrarAdministrador(Administrador administradorPorRegistrar){
@@ -147,10 +124,7 @@ public class Aplicacion {
             }
         }
 
-        if(!administradorPorRegistrar.esContraseniaValida()){
-            return false;
-        }
-
+        // La validación de contraseña ya ocurrió en el constructor del cr.ac.ucenfotec.bl.entidades.Administrador
         listaAdministradores.add(administradorPorRegistrar);
         return true;
     }
@@ -160,7 +134,7 @@ public class Aplicacion {
             return false;
         }
 
-        int edad = calcularEdad(usuarioPorRegistrar.getFechaNacimiento())
+        int edad = calcularEdad(usuarioPorRegistrar.getFechaNacimiento());
         if(edad < 18){
             return false;
         }
@@ -171,11 +145,8 @@ public class Aplicacion {
             }
         }
 
-        if(!usuarioPorRegistrar.esContraseniaValida){
-            return false;
-        }
-
-        usuarioPorRegistrar.recargarSaldo();
+        // La validación de contraseña ya ocurrió en el constructor del cr.ac.ucenfotec.bl.entidades.Usuario
+        usuarioPorRegistrar.recargarSaldo(4.99); // Aplica el bono de bienvenida
 
         listaUsuarios.add(usuarioPorRegistrar);
         return true;
@@ -195,8 +166,8 @@ public class Aplicacion {
         return null;
     }
 
-    public ArrayList<Cancion> buscarCancionPorGenero(String genero){
-        ArrayList<Cancion> resultadosBusquedaGenero = new ArrayList<Cancion>();
+    public List<Cancion> buscarCancionPorGenero(String genero){
+        List<Cancion> resultadosBusquedaGenero = new ArrayList<Cancion>();
 
         if(genero == null){
             return resultadosBusquedaGenero;
@@ -211,8 +182,8 @@ public class Aplicacion {
         return resultadosBusquedaGenero;
     }
 
-    public ArrayList<Cancion> buscarCancionPorArtista(String artista){
-        ArrayList<Cancion> resultadosBusquedaArtista = new ArrayList<Cancion>();
+    public List<Cancion> buscarCancionPorArtista(String artista){
+        List<Cancion> resultadosBusquedaArtista = new ArrayList<Cancion>();
 
         if(artista == null){
             return resultadosBusquedaArtista;
@@ -227,8 +198,8 @@ public class Aplicacion {
         return resultadosBusquedaArtista;
     }
 
-    public ArrayList<Cancion> obtenerTop3MejorCalificadas(){
-        ArrayList<Cancion> copiaCatalogoCanciones = new ArrayList<Cancion>(catalogoCanciones);
+    public List<Cancion> obtenerTop3MejorCalificadas(){
+        List<Cancion> copiaCatalogoCanciones = new ArrayList<Cancion>(catalogoCanciones);
 
         ordenarListaPorCriterio(copiaCatalogoCanciones, "calificacion");
 
@@ -236,8 +207,8 @@ public class Aplicacion {
 
     }
 
-    public ArrayList<Cancion> obtenerTop3MasCompradas(){
-        ArrayList<Cancion> copiaCatalogoCanciones = new ArrayList<Cancion>(catalogoCanciones);
+    public List<Cancion> obtenerTop3MasCompradas(){
+        List<Cancion> copiaCatalogoCanciones = new ArrayList<Cancion>(catalogoCanciones);
 
         ordenarListaPorCriterio(copiaCatalogoCanciones, "vecesComprada");
 
@@ -245,7 +216,7 @@ public class Aplicacion {
 
     }
 
-    private void ordenarListaPorCriterio(ArrayList<Cancion> lista, String criterio){
+    private void ordenarListaPorCriterio(List<Cancion> lista, String criterio){
         for(int i = 0; i < lista.size() - 1; i++){
             for(int j = 0; j < lista.size() - 1 - i; j++) {
                double valorActual = 0;
@@ -266,8 +237,8 @@ public class Aplicacion {
         }
     }
 
-    private ArrayList<Cancion> extraerTop3 (ArrayList<Cancion> listaOrdenada){
-        ArrayList<Cancion> top3 = new ArrayList<Cancion>();
+    private List<Cancion> extraerTop3 (List<Cancion> listaOrdenada){
+        List<Cancion> top3 = new ArrayList<Cancion>();
 
         for(int i = 0; i < 3 && i < listaOrdenada.size(); i++){
             top3.add(listaOrdenada.get(i));
@@ -277,7 +248,7 @@ public class Aplicacion {
     }
 
 
-    public ArrayList<Cancion> obtenerTop3MasIncluidasEnListas() {
+    public List<Cancion> obtenerTop3MasIncluidasEnListas() {
         HashMap<Cancion, Integer> contador = new HashMap<>();
         for(Usuario usuario : listaUsuarios) {
             for(ListaReproduccion lista : usuario.getListasReproduccion()){
@@ -303,13 +274,109 @@ public class Aplicacion {
                 int conteoSiguiente = contador.get(cancionSiguiente);
 
                 if(conteoActual < conteoSiguiente){
-                    Collections.swap((List<Cancion>) cancionesContadas, j, j + 1);
+                    Collections.swap(cancionesContadas, j, j + 1);
                 }
             }
         }
 
-        return extraerTop3((ArrayList<Cancion>) cancionesContadas);
+        return extraerTop3(cancionesContadas);
     }
 
+    public ArrayList<ListaReproduccion> obtenerListasDeUsuario(String nombreUsuario){
+        if(nombreUsuario == null){
+            return null;
+        }
+
+        for(Usuario usuario : listaUsuarios){
+            if(usuario.getNombreUsuario().equalsIgnoreCase(nombreUsuario)){
+                return usuario.getListasReproduccion();
+            }
+        }
+        return null;
+    }
+
+    public boolean agregarCancionACola(Cancion cancion){
+        return colaReproduccion.agregarCancion(cancion);
+    }
+
+    public void reproducirSiguienteEnCola(Cuenta cuenta){
+        if(colaReproduccion.estaVacia()){
+            return;
+        }
+        Cancion siguiente = colaReproduccion.eliminarSiguiente();
+        reproducirCancion(siguiente, cuenta);
+    }
+
+    public boolean agregarListaACola(ListaReproduccion lista) {
+        if (lista == null || lista.getCanciones() == null || lista.getCanciones().isEmpty()) {
+            return false;
+        }
+
+        boolean todasAgregadas = true;
+        for (Cancion cancion : lista.getCanciones()) {
+
+            if (!agregarCancionACola(cancion)) {
+                todasAgregadas = false;
+            }
+
+        }
+        return todasAgregadas;
+    }
+
+    //Métodos para reproducción de audio
+
+    public void reproducirCancion(Cancion cancion, Cuenta cuentaAutenticada) {
+        if (cancion == null || cuentaAutenticada == null) {
+            return;
+        }
+
+        if (cuentaAutenticada.getRol().equals("cr.ac.ucenfotec.bl.entidades.Administrador")) {
+            reproducirAudioLocal(cancion.getRutaArchivoAudio(), 0);
+            return;
+        }
+
+        Usuario usuario = (Usuario) cuentaAutenticada;
+
+        if (usuario.esDuenoDe(cancion)) {
+            reproducirAudioLocal(cancion.getRutaArchivoAudio(), 0); // Completa
+        } else {
+            reproducirAudioLocal(cancion.getRutaArchivoAudio(), 30); // Preview
+        }
+    }
+
+    /**
+     * Instancia y reproduce el audio localmente sin necesidad de una clase externa.
+     * @param rutaArchivo La ruta del archivo .wav
+     * @param limiteSegundos 0 para reproducción completa, >0 para limitar el tiempo (preview)
+     */
+    private void reproducirAudioLocal(String rutaArchivo, int limiteSegundos) {
+        try {
+            File archivo = new File(rutaArchivo);
+            AudioInputStream audioStream = AudioSystem.getAudioInputStream(archivo);
+
+            Clip clip = AudioSystem.getClip();
+            clip.open(audioStream);
+            clip.start();
+
+            if (limiteSegundos > 0) {
+
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(limiteSegundos * 1000);
+                        if (clip.isRunning()) {
+                            clip.stop();
+                            clip.close();
+                        }
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }).start();
+            }
+
+        } catch (Exception e) {
+            // En una GUI, aquí actualizarías un label de error en la vista.
+
+        }
+    }
 
 }
