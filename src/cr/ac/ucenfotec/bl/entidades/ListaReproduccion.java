@@ -49,12 +49,12 @@ public class ListaReproduccion {
     }
 
     private void setCalificacion(double calificacion) {
-        if (calificacion >= 0.0 && calificacion <= 5.0) {
-            this.calificacion = Math.round(calificacion * 10.0) / 10.0;
-        } else {
-            this.calificacion = 0.0;
+        if (calificacion < 0.0 || calificacion > 5.0) {
+            throw new IllegalArgumentException("La calificación de la lista debe estar entre 0.0 y 5.0.");
         }
+        this.calificacion = Math.round(calificacion * 10.0) / 10.0;
     }
+
 
     public ArrayList<Cancion> getCanciones() {
         return canciones;
@@ -80,19 +80,16 @@ public class ListaReproduccion {
         return this.nombre.equalsIgnoreCase(lista.nombre);
     }
 
-    public boolean agregarCancion (Cancion cancionPorAgregar){
-        if(cancionPorAgregar == null){
-            return false;
+    public boolean agregarCancion(Cancion cancionPorAgregar) {
+        if (cancionPorAgregar == null) {
+            throw new IllegalArgumentException("La canción a agregar no puede ser nula.");
         }
-
-        if(canciones.contains(cancionPorAgregar)){
-            return false;
+        if (canciones.contains(cancionPorAgregar)) {
+            throw new IllegalArgumentException("La canción ya existe en esta lista de reproducción.");
         }
 
         canciones.add(cancionPorAgregar);
-
         calcularCalificacion();
-
         return true;
     }
 
@@ -113,17 +110,15 @@ public class ListaReproduccion {
         setCalificacion(promedio);
     }
 
-    public boolean eliminarCancion(Cancion cancion){
-        if(cancion == null){
-            return false;
+    public boolean eliminarCancion(Cancion cancion) {
+        if (cancion == null) {
+            throw new IllegalArgumentException("La canción a eliminar no puede ser nula.");
         }
 
         boolean fueEliminada = canciones.remove(cancion);
-
-        if(fueEliminada){
+        if (fueEliminada) {
             calcularCalificacion();
         }
-
         return fueEliminada;
     }
 

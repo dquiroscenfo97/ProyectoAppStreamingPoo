@@ -117,13 +117,10 @@ public class Cancion {
     }
 
     private void setCalificacion(double calificacion) {
-
-        if(esCalificacionValida(calificacion)){
-            redondearUnaCifra(calificacion);
-        }else{
-            this.calificacion = 0.0;
+        if (!esCalificacionValida(calificacion)) {
+            throw new IllegalArgumentException("La calificación debe estar entre 0.0 y 5.0.");
         }
-
+        this.calificacion = Math.round(calificacion * 10.0) / 10.0;
     }
 
     public double getPrecio() {
@@ -131,11 +128,10 @@ public class Cancion {
     }
 
     public void setPrecio(double precio) {
-        if (precio >= 0.0) {
-            this.precio = Math.round(precio * 100.0) / 100.0;
-        } else {
-            this.precio = 0.0;
+        if (precio < 0.0) {
+            throw new IllegalArgumentException("El precio de la canción no puede ser negativo.");
         }
+        this.precio = Math.round(precio * 100.0) / 100.0;
     }
 
     public int getVecesComprada() {
@@ -143,9 +139,10 @@ public class Cancion {
     }
 
     private void setVecesComprada(int vecesComprada) {
-        if(vecesComprada >= 0){
-            this.vecesComprada = vecesComprada;
+        if (vecesComprada < 0) {
+            throw new IllegalArgumentException("El número de veces comprada no puede ser negativo.");
         }
+        this.vecesComprada = vecesComprada;
     }
 
     public String getRutaArchivoAudio(){
@@ -188,15 +185,14 @@ public class Cancion {
     }
 
     public void agregarCalificacion(double nuevaNota) {
-        if (esCalificacionValida(nuevaNota)) {
-
-            this.calificacion = ((this.calificacion * this.cantidadCalificaciones) + nuevaNota) / (this.cantidadCalificaciones + 1);
-
-            this.cantidadCalificaciones++;
-
-            redondearUnaCifra(this.calificacion);
-
+        if (!esCalificacionValida(nuevaNota)) {
+            throw new IllegalArgumentException("La calificación a agregar debe estar entre 0.0 y 5.0.");
         }
+
+        this.calificacion = ((this.calificacion * this.cantidadCalificaciones) + nuevaNota) / (this.cantidadCalificaciones + 1);
+        this.cantidadCalificaciones++;
+
+        this.calificacion = Math.round(this.calificacion * 10.0) / 10.0;
     }
 
     private void redondearUnaCifra(double valor) {

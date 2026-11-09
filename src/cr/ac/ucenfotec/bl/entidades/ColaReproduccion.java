@@ -12,9 +12,9 @@ public class ColaReproduccion {
     }
 
 
-    public boolean agregarCancion(Cancion cancion){
-        if(cancion == null){
-            return false;
+    public boolean agregarCancion(Cancion cancion) {
+        if (cancion == null) {
+            throw new IllegalArgumentException("No se puede agregar una canción nula a la cola de reproducción.");
         }
         colaDeCanciones.addLast(cancion);
         return true;

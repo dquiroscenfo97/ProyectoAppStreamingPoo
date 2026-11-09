@@ -9,6 +9,7 @@ import cr.ac.ucenfotec.bl.entidades.ColaReproduccion;
 
 import cr.ac.ucenfotec.bl.entidades.*;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -16,10 +17,12 @@ import java.util.HashMap;
 import java.time.Period;
 import java.util.List;
 
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
+import javax.sound.sampled.*;
 import java.io.File;
+
+import cr.ac.ucenfotec.bl.excepciones.SaldoInsuficienteException;
+import cr.ac.ucenfotec.bl.excepciones.RegistroDuplicadoException;
+import cr.ac.ucenfotec.bl.excepciones.CredencialesInvalidasException;
 
 public class Aplicacion {
 
@@ -73,30 +76,6 @@ public class Aplicacion {
         return catalogoCanciones.add(cancionPorRegistrar);
     }
 
-
-    public void mostrarCatalogoCanciones(){
-        System.out.println("--- CATÁLOGO DE CANCIONES ---");
-        for(Cancion cancion : catalogoCanciones){
-            System.out.println(cancion);
-        }
-    }
-
-    public void mostrarUsuarios(){
-        System.out.println("--- LISTA DE USUARIOS REGISTRADOS ---");
-        for(Usuario usuario : listaUsuarios){
-            System.out.println(usuario);
-        }
-    }
-
-    public void mostrarAdministradores(){
-        System.out.println("--- LISTA DE ADMINISTRADORES ---");
-        for(Administrador administrador : listaAdministradores){
-            System.out.println(administrador);
-        }
-    }
-
-
-
     public static int calcularEdad(LocalDate fechaNacimiento){
         if(fechaNacimiento == null){
             return 0; //Proteccion contra null pointer exception
@@ -113,43 +92,38 @@ public class Aplicacion {
         return !listaAdministradores.isEmpty();
     }
 
-    public boolean registrarAdministrador(Administrador administradorPorRegistrar){
-        if(administradorPorRegistrar == null){
-            return false;
+    public void registrarAdministrador(Administrador administradorPorRegistrar) throws RegistroDuplicadoException {
+        if (administradorPorRegistrar == null) {
+            throw new IllegalArgumentException("El administrador no puede ser nulo.");
         }
 
-        for(Administrador admin : listaAdministradores){
-            if(admin.equals(administradorPorRegistrar)){
-                return false;
+        for (Administrador admin : listaAdministradores) {
+            if (admin.equals(administradorPorRegistrar)) {
+                throw new RegistroDuplicadoException("Ya existe un administrador con ese correo o nombre de usuario.");
             }
         }
 
-        // La validación de contraseña ya ocurrió en el constructor del cr.ac.ucenfotec.bl.entidades.Administrador
         listaAdministradores.add(administradorPorRegistrar);
-        return true;
     }
 
-    public boolean registrarUsuario(Usuario usuarioPorRegistrar){
-        if(usuarioPorRegistrar == null){
-            return false;
+    public void registrarUsuario(Usuario usuarioPorRegistrar) throws RegistroDuplicadoException {
+        if (usuarioPorRegistrar == null) {
+            throw new IllegalArgumentException("El usuario no puede ser nulo.");
         }
 
         int edad = calcularEdad(usuarioPorRegistrar.getFechaNacimiento());
-        if(edad < 18){
-            return false;
+        if (edad < 18) {
+            throw new IllegalArgumentException("El usuario debe ser mayor de 18 años.");
         }
 
-        for(Usuario usuario : listaUsuarios){
-            if(usuario.equals(usuarioPorRegistrar)){
-                return false;
+        for (Usuario usuario : listaUsuarios) {
+            if (usuario.equals(usuarioPorRegistrar)) {
+                throw new RegistroDuplicadoException("Ya existe un usuario con ese correo o nombre de usuario.");
             }
         }
 
-        // La validación de contraseña ya ocurrió en el constructor del cr.ac.ucenfotec.bl.entidades.Usuario
-        usuarioPorRegistrar.recargarSaldo(4.99); // Aplica el bono de bienvenida
-
+        usuarioPorRegistrar.recargarSaldo(4.99);
         listaUsuarios.add(usuarioPorRegistrar);
-        return true;
     }
 
     public Cancion buscarCancionPorNombre(String nombre){
@@ -323,6 +297,23 @@ public class Aplicacion {
         return todasAgregadas;
     }
 
+    public Cuenta iniciarSesion(String nombreUsuario, String contrasenia) throws CredencialesInvalidasException {
+
+        for (Administrador a : listaAdministradores) {
+            if (a.getNombreUsuario().equals(nombreUsuario) && a.autenticar(contrasenia)) {
+                return a;
+            }
+        }
+
+        for (Usuario u : listaUsuarios) {
+            if (u.getNombreUsuario().equals(nombreUsuario) && u.autenticar(contrasenia)) {
+                return u;
+            }
+        }
+
+        throw new CredencialesInvalidasException("El nombre de usuario o la contraseña son incorrectos.");
+    }
+
     //Métodos para reproducción de audio
 
     public void reproducirCancion(Cancion cancion, Cuenta cuentaAutenticada) {
@@ -330,7 +321,7 @@ public class Aplicacion {
             return;
         }
 
-        if (cuentaAutenticada.getRol().equals("cr.ac.ucenfotec.bl.entidades.Administrador")) {
+        if (cuentaAutenticada.getRol().equals("Administrador")) {
             reproducirAudioLocal(cancion.getRutaArchivoAudio(), 0);
             return;
         }
@@ -352,30 +343,49 @@ public class Aplicacion {
     private void reproducirAudioLocal(String rutaArchivo, int limiteSegundos) {
         try {
             File archivo = new File(rutaArchivo);
-            AudioInputStream audioStream = AudioSystem.getAudioInputStream(archivo);
 
-            Clip clip = AudioSystem.getClip();
-            clip.open(audioStream);
-            clip.start();
-
-            if (limiteSegundos > 0) {
-
-                new Thread(() -> {
-                    try {
-                        Thread.sleep(limiteSegundos * 1000);
-                        if (clip.isRunning()) {
-                            clip.stop();
-                            clip.close();
-                        }
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                }).start();
+            if (!archivo.exists()) {
+                System.out.println("Error: El archivo de audio no existe en la ruta especificada.");
+                return;
             }
 
-        } catch (Exception e) {
-            // En una GUI, aquí actualizarías un label de error en la vista.
+            AudioInputStream audioStream = AudioSystem.getAudioInputStream(archivo);
+            Clip clip = AudioSystem.getClip();
+            clip.open(audioStream);
 
+            long duracionTotalMicrosegundos = clip.getMicrosecondLength();
+            long treintaSegundosMicrosegundos = 30_000_000L;
+
+            if (limiteSegundos > 0) {
+                long maxInicio = Math.max(0, duracionTotalMicrosegundos - treintaSegundosMicrosegundos);
+                long inicioAleatorio = (long) (Math.random() * maxInicio);
+                clip.setMicrosecondPosition(inicioAleatorio);
+
+                clip.start();
+                Thread.sleep(limiteSegundos * 1000);
+
+                if (clip.isRunning()) {
+                    clip.stop();
+                }
+            } else {
+                clip.start();
+                while (clip.isRunning()) {
+                    Thread.sleep(1000);
+                }
+            }
+
+            clip.close();
+
+        } catch (UnsupportedAudioFileException e) {
+            System.out.println("Error: El formato de audio no es soportado. Use archivos .WAV");
+        } catch (LineUnavailableException e) {
+            System.out.println("Error: El sistema de audio no está disponible.");
+        } catch (IOException e) {
+            System.out.println("Error de lectura al acceder al archivo de audio.");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            System.out.println("Error inesperado al reproducir: " + e.getMessage());
         }
     }
 

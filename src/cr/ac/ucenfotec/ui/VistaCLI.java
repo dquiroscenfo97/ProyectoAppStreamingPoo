@@ -12,6 +12,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Scanner;
 
+import cr.ac.ucenfotec.bl.excepciones.SaldoInsuficienteException;
+import cr.ac.ucenfotec.bl.excepciones.RegistroDuplicadoException;
+import cr.ac.ucenfotec.bl.excepciones.CredencialesInvalidasException;
+import java.time.format.DateTimeParseException;
+
 public class VistaCLI {
 
     private static final Scanner scanner = new Scanner(System.in);
@@ -28,6 +33,7 @@ public class VistaCLI {
             "3. Buscar canción por nombre",
             "4. Reproducir canción",
             "5. Gestionar cola de reproducción",
+            "6. Modificar contraseña",
             "0. Cerrar sesión"
     };
 
@@ -39,6 +45,7 @@ public class VistaCLI {
             "5. Mis listas de reproducción",
             "6. Ver Top 3",
             "7. Reproducir y gestionar cola",
+            "8. Modificar contraseña",
             "0. Cerrar sesión"
     };
 
@@ -131,7 +138,7 @@ public class VistaCLI {
                 subirCancion();
                 return 1;
             case 2:
-                aplicacion.mostrarCatalogoCanciones();
+                mostrarCatalogoCanciones();
                 return 1;
             case 3:
                 buscarCancion();
@@ -142,9 +149,24 @@ public class VistaCLI {
             case 5:
                 gestionarCola();
                 return 1;
+            case 6:
+                modificarContrasenia();
+                return 1;
             default:
                 System.out.println("\nError, seleccione una opción válida.");
                 return 1;
+        }
+    }
+
+    private void mostrarCatalogoCanciones() {
+        System.out.println("\n--- CATÁLOGO DE CANCIONES ---");
+        List<Cancion> catalogo = aplicacion.getCatalogoCanciones();
+        if (catalogo.isEmpty()) {
+            System.out.println("El catálogo está vacío actualmente.");
+        } else {
+            for (Cancion cancion : catalogo) {
+                System.out.println(cancion.toString());
+            }
         }
     }
 
@@ -181,6 +203,9 @@ public class VistaCLI {
             case 7:
                 gestionarCola();
                 return 2;
+            case 8:
+                modificarContrasenia();
+                return 2;
             default:
                 System.out.println("\nError, seleccione una opción válida.");
                 return 2;
@@ -194,10 +219,11 @@ public class VistaCLI {
         String contrasenia = solicitarContraseniaSegura();
 
         Administrador admin = new Administrador(correo, nombreUsuario, contrasenia);
-        if (aplicacion.registrarAdministrador(admin)) {
+        try {
+            aplicacion.registrarAdministrador(admin);
             System.out.println("✓ Administrador registrado exitosamente.");
-        } else {
-            System.out.println("✗ Error al registrar el administrador. Verifique los datos.");
+        } catch (RegistroDuplicadoException e) {
+            System.out.println("✗ " + e.getMessage());
         }
     }
 
@@ -216,10 +242,11 @@ public class VistaCLI {
         Usuario usuario = new Usuario(correo, nombreUsuario, contrasenia, nombreCompleto,
                 fechaNacimiento, nacionalidad, cedula, avatar, 0.0);
 
-        if (aplicacion.registrarUsuario(usuario)) {
+        try {
+            aplicacion.registrarUsuario(usuario);
             System.out.println("✓ Usuario registrado exitosamente. Bono de $4.99 aplicado.");
-        } else {
-            System.out.println("✗ Error al registrar. Verifique edad (>=18), nacionalidad o datos duplicados.");
+        } catch (RegistroDuplicadoException e) {
+            System.out.println("✗ " + e.getMessage());
         }
     }
 
@@ -228,25 +255,25 @@ public class VistaCLI {
         String nombreUsuario = solicitarTexto("Nombre de usuario: ");
         String contrasenia = solicitarTexto("Contraseña: ");
 
-        for (Administrador a : aplicacion.getListaAdministradores()) {
-            if (a.getNombreUsuario().equals(nombreUsuario) && a.autenticar(contrasenia)) {
-                this.cuentaAutenticada = a;
-                System.out.println("✓ Bienvenido, Administrador: " + a.getNombreUsuario());
-                return 1;
-            }
-        }
+        try {
+            // Delegamos la validación a Aplicacion
+            this.cuentaAutenticada = aplicacion.iniciarSesion(nombreUsuario, contrasenia);
 
-        for (Usuario u : aplicacion.getListaUsuarios()) {
-            if (u.getNombreUsuario().equals(nombreUsuario) && u.autenticar(contrasenia)) {
-                this.cuentaAutenticada = u;
-                System.out.println("✓ Bienvenido, Usuario: " + u.getNombreUsuario());
+            if (cuentaAutenticada instanceof Administrador) {
+                System.out.println("✓ Bienvenido, Administrador: " + cuentaAutenticada.getNombreUsuario());
+                return 1;
+            } else {
+                System.out.println("✓ Bienvenido, Usuario: " + cuentaAutenticada.getNombreUsuario());
+                mostrarListasDeUsuario((Usuario) cuentaAutenticada); // Requisito de consigna
                 return 2;
             }
+        } catch (CredencialesInvalidasException e) {
+            System.out.println("✗ " + e.getMessage());
+            return 0;
         }
-
-        System.out.println("✗ Credenciales incorrectas o usuario no encontrado.");
-        return 0;
     }
+
+
 
     private void subirCancion() {
         System.out.println("\n--- SUBIR NUEVA CANCIÓN ---");
@@ -260,12 +287,12 @@ public class VistaCLI {
         double precio = solicitarDecimal("Precio: ");
         String rutaAudio = solicitarTexto("Ruta del archivo de audio: ");
 
-        Cancion nuevaCancion = new Cancion(titulo, genero, artista, compositor, fecha, album, caratula, 0.0, precio, 0, rutaAudio);
-
-        if (aplicacion.registrarCancion(nuevaCancion)) {
+        try {
+            Cancion nuevaCancion = new Cancion(titulo, genero, artista, compositor, fecha, album, caratula, 0.0, precio, 0, rutaAudio);
+            aplicacion.registrarCancion(nuevaCancion);
             System.out.println("✓ Canción registrada exitosamente en el catálogo.");
-        } else {
-            System.out.println("✗ Error al registrar la canción.");
+        } catch (IllegalArgumentException e) {
+            System.out.println("✗ Error en los datos de la canción: " + e.getMessage());
         }
     }
 
@@ -316,15 +343,18 @@ public class VistaCLI {
     }
 
     private void explorarYComprar(Usuario usuarioActual) {
-        aplicacion.mostrarCatalogoCanciones();
+        mostrarCatalogoCanciones();
         String titulo = solicitarTexto("\nIngrese el título de la canción que desea comprar: ");
         Cancion c = aplicacion.buscarCancionPorNombre(titulo);
 
         if (c != null) {
-            if (usuarioActual.agregarCancion(c)) {
+            try {
+                usuarioActual.agregarCancion(c);
                 System.out.println("✓ Compra exitosa. Canción agregada a su colección.");
-            } else {
-                System.out.println("✗ No se pudo comprar. Verifique su saldo o si ya posee la canción.");
+            } catch (SaldoInsuficienteException e) {
+                System.out.println("✗ " + e.getMessage());
+            } catch (IllegalArgumentException e) {
+                System.out.println("✗ " + e.getMessage());
             }
         } else {
             System.out.println("✗ Canción no encontrada.");
@@ -332,16 +362,28 @@ public class VistaCLI {
     }
 
     private void calificarColeccion(Usuario usuarioActual) {
-        usuarioActual.mostrarColeccionCanciones();
+        System.out.println("--- COLECCION DE CANCIONES DE " + usuarioActual.getNombreUsuario().toUpperCase() + " ---");
+        if (usuarioActual.getColeccionCanciones().isEmpty()) {
+            System.out.println("No has comprado ninguna canción aún");
+        } else {
+            for (Cancion cancion : usuarioActual.getColeccionCanciones()) {
+                System.out.println(cancion.toString());
+            }
+        }
+
         String titulo = solicitarTexto("\nIngrese el título de la canción a calificar: ");
         Cancion c = usuarioActual.buscarCancionEnColeccion(titulo);
 
         if (c != null) {
             double nota = solicitarDecimal("Ingrese su calificación (0.0 a 5.0): ");
-            if (usuarioActual.calificarCancion(c, nota)) {
-                System.out.println("✓ Calificación registrada exitosamente.");
-            } else {
-                System.out.println("✗ Error al calificar. Verifique que la nota esté entre 0.0 y 5.0.");
+            try {
+                if (usuarioActual.calificarCancion(c, nota)) {
+                    System.out.println("✓ Calificación registrada exitosamente.");
+                } else {
+                    System.out.println("✗ Error al calificar. Verifique que la nota esté entre 0.0 y 5.0.");
+                }
+            } catch (IllegalArgumentException e) {
+                System.out.println("✗ " + e.getMessage());
             }
         } else {
             System.out.println("✗ La canción no se encuentra en su colección.");
@@ -353,6 +395,7 @@ public class VistaCLI {
         System.out.println("1. Crear nueva lista");
         System.out.println("2. Agregar canción a una lista");
         System.out.println("3. Ver mis listas");
+        System.out.println("4. Buscar lista por nombre");
         byte subOpcion = solicitarOpcion();
 
         if (subOpcion == 1) {
@@ -364,36 +407,46 @@ public class VistaCLI {
                 System.out.println("✗ No se pudo crear la lista (nombre vacío o ya existe).");
             }
         } else if (subOpcion == 2) {
-            usuarioActual.mostrarColeccionCanciones();
+            System.out.println("--- COLECCION DE CANCIONES DE " + usuarioActual.getNombreUsuario().toUpperCase() + " ---");
+            if (usuarioActual.getColeccionCanciones().isEmpty()) {
+                System.out.println("No has comprado ninguna canción aún");
+            } else {
+                for (Cancion cancion : usuarioActual.getColeccionCanciones()) {
+                    System.out.println(cancion.toString());
+                }
+            }
+
             String nombreLista = solicitarTexto("Nombre de la lista de destino: ");
             String tituloCancion = solicitarTexto("Título de la canción a agregar: ");
             Cancion c = usuarioActual.buscarCancionEnColeccion(tituloCancion);
 
             if (c != null) {
-                if (usuarioActual.agregarCancionALista(nombreLista, c)) {
-                    System.out.println("✓ Canción agregada a la lista.");
-                } else {
-                    System.out.println("✗ No se pudo agregar. Verifique el nombre de la lista o si la canción ya está en ella.");
+                try {
+                    if (usuarioActual.agregarCancionALista(nombreLista, c)) {
+                        System.out.println("✓ Canción agregada a la lista.");
+                    } else {
+                        System.out.println("✗ No se pudo agregar. Verifique el nombre de la lista.");
+                    }
+                } catch (IllegalArgumentException e) {
+                    System.out.println("✗ " + e.getMessage());
                 }
             } else {
                 System.out.println("✗ La canción no se encuentra en su colección.");
             }
         } else if (subOpcion == 3) {
-            usuarioActual.mostrarListasReproduccion();
+            mostrarListasDeUsuario(usuarioActual);
+        } else if (subOpcion == 4) {
+            String nombreLista = solicitarTexto("Ingrese el nombre de la lista a buscar: ");
+            ListaReproduccion lista = usuarioActual.buscarLista(nombreLista);
+            if (lista != null) {
+                System.out.println("✓ Lista encontrada:");
+                System.out.println(lista.toString());
+            } else {
+                System.out.println("✗ No se encontró ninguna lista con ese nombre.");
+            }
         } else {
             System.out.println("Opción inválida.");
         }
-    }
-
-    private void verTop3() {
-        System.out.println("\n=== TOP 3 MEJOR CALIFICADAS ===");
-        imprimirResultados(aplicacion.obtenerTop3MejorCalificadas());
-
-        System.out.println("\n=== TOP 3 MÁS COMPRADAS ===");
-        imprimirResultados(aplicacion.obtenerTop3MasCompradas());
-
-        System.out.println("\n=== TOP 3 MÁS INCLUIDAS EN LISTAS ===");
-        imprimirResultados(aplicacion.obtenerTop3MasIncluidasEnListas());
     }
 
     private void gestionarCola() {
@@ -407,8 +460,12 @@ public class VistaCLI {
             String titulo = solicitarTexto("Título de la canción: ");
             Cancion c = aplicacion.buscarCancionPorNombre(titulo);
             if (c != null) {
-                if (aplicacion.agregarCancionACola(c)) {
-                    System.out.println("✓ Canción agregada a la cola.");
+                try {
+                    if (aplicacion.agregarCancionACola(c)) {
+                        System.out.println("✓ Canción agregada a la cola.");
+                    }
+                } catch (IllegalArgumentException e) {
+                    System.out.println("✗ " + e.getMessage());
                 }
             } else {
                 System.out.println("✗ Canción no encontrada.");
@@ -416,14 +473,19 @@ public class VistaCLI {
         } else if (subOpcion == 2) {
             if (this.cuentaAutenticada instanceof Usuario) {
                 Usuario u = (Usuario) this.cuentaAutenticada;
-                u.mostrarListasReproduccion();
+                mostrarListasDeUsuario(u);
+
                 String nombreLista = solicitarTexto("Nombre de la lista a agregar: ");
                 ListaReproduccion lista = u.buscarLista(nombreLista);
                 if (lista != null) {
-                    if (aplicacion.agregarListaACola(lista)) {
-                        System.out.println("✓ Lista agregada a la cola de reproducción.");
-                    } else {
-                        System.out.println("✗ La lista está vacía o no se pudo agregar.");
+                    try {
+                        if (aplicacion.agregarListaACola(lista)) {
+                            System.out.println("✓ Lista agregada a la cola de reproducción.");
+                        } else {
+                            System.out.println("✗ La lista está vacía o no se pudo agregar.");
+                        }
+                    } catch (IllegalArgumentException e) {
+                        System.out.println("✗ " + e.getMessage());
                     }
                 } else {
                     System.out.println("✗ Lista no encontrada.");
@@ -433,15 +495,49 @@ public class VistaCLI {
             }
         } else if (subOpcion == 3) {
             System.out.println("Reproduciendo siguiente elemento de la cola...");
-            aplicacion.reproducirSiguienteEnCola(this.cuentaAutenticada);
+            try {
+                aplicacion.reproducirSiguienteEnCola(this.cuentaAutenticada);
+            } catch (IllegalArgumentException e) {
+                System.out.println("✗ " + e.getMessage());
+            }
         } else {
             System.out.println("Opción inválida.");
         }
     }
 
+    private void modificarContrasenia() {
+        System.out.println("\n--- MODIFICAR CONTRASEÑA ---");
+        String actual = solicitarTexto("Ingrese su contraseña actual: ");
+        String nueva = solicitarContraseniaSegura();
+
+        if (cuentaAutenticada.modificarContrasenia(actual, nueva, nueva)) {
+            System.out.println("✓ Contraseña modificada exitosamente.");
+        } else {
+            System.out.println("✗ Error al modificar la contraseña. Verifique que la actual sea correcta y que la nueva sea distinta.");
+        }
+    }
+
+    private void mostrarListasDeUsuario(Usuario usuario) {
+        System.out.println("\n--- SUS LISTAS DE REPRODUCCIÓN ---");
+        if (usuario.getListasReproduccion().isEmpty()) {
+            System.out.println("Aún no tienes listas de reproducción creadas.");
+        } else {
+            for (ListaReproduccion lista : usuario.getListasReproduccion()) {
+                System.out.println(lista.toString());
+            }
+        }
+    }
+
     private byte solicitarOpcion() {
-        System.out.print("\nPor favor ingrese una opción: ");
-        return Byte.parseByte(scanner.nextLine().trim());
+        while (true) {
+            System.out.print("\nPor favor ingrese una opción: ");
+            try {
+                return Byte.parseByte(scanner.nextLine().trim());
+            } catch (NumberFormatException e) {
+                System.out.println("Error: Debe ingresar un número válido.");
+
+            }
+        }
     }
 
     private String solicitarTexto(String mensaje) {
@@ -450,8 +546,14 @@ public class VistaCLI {
     }
 
     private double solicitarDecimal(String mensaje) {
-        System.out.print(mensaje + " ");
-        return Double.parseDouble(scanner.nextLine().trim());
+        while (true) {
+            System.out.print(mensaje + " ");
+            try {
+                return Double.parseDouble(scanner.nextLine().trim());
+            } catch (NumberFormatException e) {
+                System.out.println("Error: Debe ingresar un número decimal válido.");
+            }
+        }
     }
 
     private String solicitarContraseniaSegura() {
@@ -461,7 +563,7 @@ public class VistaCLI {
             contrasenia = solicitarTexto("Contraseña (8-12 caracteres, mayús, minús, número y carácter especial): ");
             confirmacion = solicitarTexto("Confirme su contraseña: ");
 
-            if (contrasenia.equals(confirmacion) && cr.ac.ucenfotec.bl.entidades.Cuenta.esContraseniaValida(contrasenia)) {
+            if (contrasenia.equals(confirmacion) && Cuenta.esContraseniaValida(contrasenia)) {
                 esValida = true;
             } else {
                 System.out.println("Error: Las contraseñas no coinciden o no cumplen con los requisitos de seguridad.");
@@ -472,7 +574,26 @@ public class VistaCLI {
 
     private LocalDate solicitarFecha(String mensaje, String patron) {
         DateTimeFormatter formateador = DateTimeFormatter.ofPattern(patron);
-        String fechaTexto = solicitarTexto(mensaje);
-        return LocalDate.parse(fechaTexto, formateador);
+        while (true) {
+            String fechaTexto = solicitarTexto(mensaje);
+            try {
+
+                return LocalDate.parse(fechaTexto, formateador);
+            } catch (DateTimeParseException e) {
+                System.out.println("Error: Fecha inválida o formato incorrecto. Use el formato: " + patron);
+
+            }
+        }
+    }
+
+    private void verTop3() {
+        System.out.println("\n=== TOP 3 MEJOR CALIFICADAS ===");
+        imprimirResultados(aplicacion.obtenerTop3MejorCalificadas());
+
+        System.out.println("\n=== TOP 3 MÁS COMPRADAS ===");
+        imprimirResultados(aplicacion.obtenerTop3MasCompradas());
+
+        System.out.println("\n=== TOP 3 MÁS INCLUIDAS EN LISTAS ===");
+        imprimirResultados(aplicacion.obtenerTop3MasIncluidasEnListas());
     }
 }

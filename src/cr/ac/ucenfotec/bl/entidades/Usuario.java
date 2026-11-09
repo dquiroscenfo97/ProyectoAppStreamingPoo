@@ -1,5 +1,7 @@
 package cr.ac.ucenfotec.bl.entidades;
 
+import cr.ac.ucenfotec.bl.excepciones.SaldoInsuficienteException;
+
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.ArrayList;
@@ -147,7 +149,7 @@ public class Usuario extends Cuenta {
 
     @Override
     public String getRol() {
-        return "cr.ac.ucenfotec.bl.entidades.Usuario";
+        return "Usuario";
     }
 
     //Validaciones
@@ -161,17 +163,19 @@ public class Usuario extends Cuenta {
 
     //Operaciones
 
-    public boolean agregarCancion(Cancion cancion) {
-        if (cancion == null || esDuenoDe(cancion)) {
-            return false;
+    public void agregarCancion(Cancion cancion) throws SaldoInsuficienteException {
+        if (cancion == null) {
+            throw new IllegalArgumentException("La canción no puede ser nula.");
+        }
+        if (esDuenoDe(cancion)) {
+            throw new IllegalArgumentException("Ya eres dueño de esta canción.");
         }
         if (saldo < cancion.getPrecio()) {
-            return false;
+            throw new SaldoInsuficienteException("No tienes saldo suficiente para comprar '" + cancion.getTitulo() + "'. Precio: $" + cancion.getPrecio() + ", Tu saldo: $" + saldo);
         }
         saldo = redondearDosDecimales(saldo - cancion.getPrecio());
         coleccionCanciones.add(cancion);
         cancion.incrementarVecesComprada();
-        return true;
     }
 
     /**
@@ -255,27 +259,7 @@ public class Usuario extends Cuenta {
         return null;
     }
 
-    public void mostrarListasReproduccion(){
-        System.out.println("--- LISTAS DE REPRODUCCION DE " + nombreUsuario.toUpperCase() + " ---");
-        if(listasReproduccion.isEmpty()){
-            System.out.println("No tienes listas de reproduccion creadas");
-        }else{
-            for(ListaReproduccion lista : listasReproduccion){
-                System.out.println(lista);
-            }
-        }
-    }
 
-    public void mostrarColeccionCanciones(){
-        System.out.println("--- COLECCION DE CANCIONES DE " + nombreUsuario.toUpperCase() + " ---");
-        if(coleccionCanciones.isEmpty()){
-            System.out.println("No has comprado ninguna canción aún");
-        }else{
-            for(Cancion cancion : coleccionCanciones){
-                System.out.println(cancion);
-            }
-        }
-    }
 
     //Auxiliares
 
