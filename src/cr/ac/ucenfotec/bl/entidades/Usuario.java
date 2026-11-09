@@ -182,6 +182,7 @@ public class Usuario extends Cuenta {
      * Agrega una canción a una lista de reproducción específica del usuario.
      * Valida que el usuario haya comprado la canción previamente.
      */
+
     public boolean agregarCancionALista(String nombreLista, Cancion cancion) {
         if (cancion == null) {
             return false;
@@ -198,6 +199,7 @@ public class Usuario extends Cuenta {
 
         return lista.agregarCancion(cancion);
     }
+
 
     public boolean calificarCancion(Cancion c, double calificacion) {
         if (c == null || calificacion < 0.0 || calificacion > 5.0) {

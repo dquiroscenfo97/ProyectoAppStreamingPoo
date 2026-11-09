@@ -239,14 +239,20 @@ public class VistaCLI {
 
         String avatar = solicitarTexto("Ruta del avatar (dejar vacío para usar el predeterminado): ");
 
-        Usuario usuario = new Usuario(correo, nombreUsuario, contrasenia, nombreCompleto,
-                fechaNacimiento, nacionalidad, cedula, avatar, 0.0);
-
         try {
+            // La creación del objeto ahora está dentro del try para atrapar errores de validación
+            Usuario usuario = new Usuario(correo, nombreUsuario, contrasenia, nombreCompleto,
+                    fechaNacimiento, nacionalidad, cedula, avatar, 0.0);
+
             aplicacion.registrarUsuario(usuario);
             System.out.println("✓ Usuario registrado exitosamente. Bono de $4.99 aplicado.");
+
         } catch (RegistroDuplicadoException e) {
             System.out.println("✗ " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            // Aquí atrapamos el error de nacionalidad, edad, formato de cédula, etc.
+            System.out.println("✗ Error en los datos ingresados: " + e.getMessage());
+            System.out.println("Por favor, intente el registro nuevamente con los datos correctos.");
         }
     }
 
@@ -472,6 +478,7 @@ public class VistaCLI {
             }
         } else if (subOpcion == 2) {
             if (this.cuentaAutenticada instanceof Usuario) {
+                // Usuario solo puede agregar sus propias listas
                 Usuario u = (Usuario) this.cuentaAutenticada;
                 mostrarListasDeUsuario(u);
 
@@ -491,7 +498,58 @@ public class VistaCLI {
                     System.out.println("✗ Lista no encontrada.");
                 }
             } else {
-                System.out.println("✗ Solo los usuarios pueden agregar sus listas personales a la cola.");
+                // Administrador puede agregar listas de cualquier usuario
+                System.out.println("--- LISTAS DE REPRODUCCIÓN DE TODOS LOS USUARIOS ---");
+                List<Usuario> usuarios = aplicacion.getListaUsuarios();
+
+                if (usuarios.isEmpty()) {
+                    System.out.println("No hay usuarios registrados en el sistema.");
+                } else {
+                    boolean hayListas = false;
+                    for (Usuario usuario : usuarios) {
+                        if (!usuario.getListasReproduccion().isEmpty()) {
+                            hayListas = true;
+                            System.out.println("\nUsuario: " + usuario.getNombreUsuario());
+                            for (ListaReproduccion lista : usuario.getListasReproduccion()) {
+                                System.out.println("  - " + lista.getNombre() + " (" + lista.getCanciones().size() + " canciones)");
+                            }
+                        }
+                    }
+
+                    if (!hayListas) {
+                        System.out.println("Ningún usuario tiene listas de reproducción creadas.");
+                    } else {
+                        String nombreUsuario = solicitarTexto("Nombre del usuario propietario de la lista: ");
+                        String nombreLista = solicitarTexto("Nombre de la lista a agregar: ");
+
+                        Usuario usuarioDestino = null;
+                        for (Usuario usuario : usuarios) {
+                            if (usuario.getNombreUsuario().equalsIgnoreCase(nombreUsuario)) {
+                                usuarioDestino = usuario;
+                                break;
+                            }
+                        }
+
+                        if (usuarioDestino != null) {
+                            ListaReproduccion lista = usuarioDestino.buscarLista(nombreLista);
+                            if (lista != null) {
+                                try {
+                                    if (aplicacion.agregarListaACola(lista)) {
+                                        System.out.println("✓ Lista '" + nombreLista + "' del usuario '" + nombreUsuario + "' agregada a la cola.");
+                                    } else {
+                                        System.out.println("✗ La lista está vacía o no se pudo agregar.");
+                                    }
+                                } catch (IllegalArgumentException e) {
+                                    System.out.println("✗ " + e.getMessage());
+                                }
+                            } else {
+                                System.out.println("✗ Lista no encontrada para ese usuario.");
+                            }
+                        } else {
+                            System.out.println("✗ Usuario no encontrado.");
+                        }
+                    }
+                }
             }
         } else if (subOpcion == 3) {
             System.out.println("Reproduciendo siguiente elemento de la cola...");

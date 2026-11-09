@@ -72,12 +72,12 @@ public class Aplicacion {
 
     //Operaciones
 
-    public boolean registrarCancion(Cancion cancionPorRegistrar){
+    public boolean registrarCancion(Cancion cancionPorRegistrar) {
         return catalogoCanciones.add(cancionPorRegistrar);
     }
 
-    public static int calcularEdad(LocalDate fechaNacimiento){
-        if(fechaNacimiento == null){
+    public static int calcularEdad(LocalDate fechaNacimiento) {
+        if (fechaNacimiento == null) {
             return 0; //Proteccion contra null pointer exception
         }
 
@@ -88,7 +88,7 @@ public class Aplicacion {
         return periodo.getYears();
     }
 
-    public boolean hayAdministradorRegistrado () {
+    public boolean hayAdministradorRegistrado() {
         return !listaAdministradores.isEmpty();
     }
 
@@ -126,13 +126,13 @@ public class Aplicacion {
         listaUsuarios.add(usuarioPorRegistrar);
     }
 
-    public Cancion buscarCancionPorNombre(String nombre){
-        if(nombre == null){
+    public Cancion buscarCancionPorNombre(String nombre) {
+        if (nombre == null) {
             return null;
         }
 
-        for(Cancion cancion : catalogoCanciones){
-            if(cancion.getTitulo().equalsIgnoreCase(nombre)){
+        for (Cancion cancion : catalogoCanciones) {
+            if (cancion.getTitulo().equalsIgnoreCase(nombre)) {
                 return cancion;
             }
         }
@@ -140,15 +140,15 @@ public class Aplicacion {
         return null;
     }
 
-    public List<Cancion> buscarCancionPorGenero(String genero){
+    public List<Cancion> buscarCancionPorGenero(String genero) {
         List<Cancion> resultadosBusquedaGenero = new ArrayList<Cancion>();
 
-        if(genero == null){
+        if (genero == null) {
             return resultadosBusquedaGenero;
         }
 
-        for(Cancion cancion : catalogoCanciones){
-            if(cancion.getGenero().equalsIgnoreCase(genero)){
+        for (Cancion cancion : catalogoCanciones) {
+            if (cancion.getGenero().equalsIgnoreCase(genero)) {
                 resultadosBusquedaGenero.add(cancion);
             }
         }
@@ -156,15 +156,15 @@ public class Aplicacion {
         return resultadosBusquedaGenero;
     }
 
-    public List<Cancion> buscarCancionPorArtista(String artista){
+    public List<Cancion> buscarCancionPorArtista(String artista) {
         List<Cancion> resultadosBusquedaArtista = new ArrayList<Cancion>();
 
-        if(artista == null){
+        if (artista == null) {
             return resultadosBusquedaArtista;
         }
 
-        for(Cancion cancion : catalogoCanciones){
-            if(cancion.getArtista().equalsIgnoreCase(artista)){
+        for (Cancion cancion : catalogoCanciones) {
+            if (cancion.getArtista().equalsIgnoreCase(artista)) {
                 resultadosBusquedaArtista.add(cancion);
             }
         }
@@ -172,7 +172,7 @@ public class Aplicacion {
         return resultadosBusquedaArtista;
     }
 
-    public List<Cancion> obtenerTop3MejorCalificadas(){
+    public List<Cancion> obtenerTop3MejorCalificadas() {
         List<Cancion> copiaCatalogoCanciones = new ArrayList<Cancion>(catalogoCanciones);
 
         ordenarListaPorCriterio(copiaCatalogoCanciones, "calificacion");
@@ -181,7 +181,7 @@ public class Aplicacion {
 
     }
 
-    public List<Cancion> obtenerTop3MasCompradas(){
+    public List<Cancion> obtenerTop3MasCompradas() {
         List<Cancion> copiaCatalogoCanciones = new ArrayList<Cancion>(catalogoCanciones);
 
         ordenarListaPorCriterio(copiaCatalogoCanciones, "vecesComprada");
@@ -190,31 +190,31 @@ public class Aplicacion {
 
     }
 
-    private void ordenarListaPorCriterio(List<Cancion> lista, String criterio){
-        for(int i = 0; i < lista.size() - 1; i++){
-            for(int j = 0; j < lista.size() - 1 - i; j++) {
-               double valorActual = 0;
-               double valorSiguiente = 0;
+    private void ordenarListaPorCriterio(List<Cancion> lista, String criterio) {
+        for (int i = 0; i < lista.size() - 1; i++) {
+            for (int j = 0; j < lista.size() - 1 - i; j++) {
+                double valorActual = 0;
+                double valorSiguiente = 0;
 
-               if(criterio.equals("calificacion")){
+                if (criterio.equals("calificacion")) {
                     valorActual = lista.get(j).getCalificacion();
                     valorSiguiente = lista.get(j + 1).getCalificacion();
-               }else if(criterio.equals("vecesComprada")){
-                   valorActual = lista.get(j).getVecesComprada();
-                   valorSiguiente = lista.get(j + 1).getVecesComprada();
-               }
+                } else if (criterio.equals("vecesComprada")) {
+                    valorActual = lista.get(j).getVecesComprada();
+                    valorSiguiente = lista.get(j + 1).getVecesComprada();
+                }
 
-               if(valorActual < valorSiguiente){
-                   Collections.swap(lista, j, j+1);
-               }
+                if (valorActual < valorSiguiente) {
+                    Collections.swap(lista, j, j + 1);
+                }
             }
         }
     }
 
-    private List<Cancion> extraerTop3 (List<Cancion> listaOrdenada){
+    private List<Cancion> extraerTop3(List<Cancion> listaOrdenada) {
         List<Cancion> top3 = new ArrayList<Cancion>();
 
-        for(int i = 0; i < 3 && i < listaOrdenada.size(); i++){
+        for (int i = 0; i < 3 && i < listaOrdenada.size(); i++) {
             top3.add(listaOrdenada.get(i));
         }
 
@@ -224,10 +224,10 @@ public class Aplicacion {
 
     public List<Cancion> obtenerTop3MasIncluidasEnListas() {
         HashMap<Cancion, Integer> contador = new HashMap<>();
-        for(Usuario usuario : listaUsuarios) {
-            for(ListaReproduccion lista : usuario.getListasReproduccion()){
-                for(Cancion cancion : lista.getCanciones()){
-                    if(contador.containsKey(cancion)){
+        for (Usuario usuario : listaUsuarios) {
+            for (ListaReproduccion lista : usuario.getListasReproduccion()) {
+                for (Cancion cancion : lista.getCanciones()) {
+                    if (contador.containsKey(cancion)) {
                         contador.put(cancion, contador.get(cancion) + 1);
                     } else {
                         contador.put(cancion, 1);
@@ -238,8 +238,8 @@ public class Aplicacion {
 
         List<Cancion> cancionesContadas = new ArrayList<>(contador.keySet());
 
-        for(int i = 0; i < cancionesContadas.size() - 1; i++){
-            for(int j = 0; j < cancionesContadas.size() - 1 - i; j++) {
+        for (int i = 0; i < cancionesContadas.size() - 1; i++) {
+            for (int j = 0; j < cancionesContadas.size() - 1 - i; j++) {
 
                 Cancion cancionActual = cancionesContadas.get(j);
                 Cancion cancionSiguiente = cancionesContadas.get(j + 1);
@@ -247,7 +247,7 @@ public class Aplicacion {
                 int conteoActual = contador.get(cancionActual);
                 int conteoSiguiente = contador.get(cancionSiguiente);
 
-                if(conteoActual < conteoSiguiente){
+                if (conteoActual < conteoSiguiente) {
                     Collections.swap(cancionesContadas, j, j + 1);
                 }
             }
@@ -256,25 +256,25 @@ public class Aplicacion {
         return extraerTop3(cancionesContadas);
     }
 
-    public ArrayList<ListaReproduccion> obtenerListasDeUsuario(String nombreUsuario){
-        if(nombreUsuario == null){
+    public ArrayList<ListaReproduccion> obtenerListasDeUsuario(String nombreUsuario) {
+        if (nombreUsuario == null) {
             return null;
         }
 
-        for(Usuario usuario : listaUsuarios){
-            if(usuario.getNombreUsuario().equalsIgnoreCase(nombreUsuario)){
+        for (Usuario usuario : listaUsuarios) {
+            if (usuario.getNombreUsuario().equalsIgnoreCase(nombreUsuario)) {
                 return usuario.getListasReproduccion();
             }
         }
         return null;
     }
 
-    public boolean agregarCancionACola(Cancion cancion){
+    public boolean agregarCancionACola(Cancion cancion) {
         return colaReproduccion.agregarCancion(cancion);
     }
 
-    public void reproducirSiguienteEnCola(Cuenta cuenta){
-        if(colaReproduccion.estaVacia()){
+    public void reproducirSiguienteEnCola(Cuenta cuenta) {
+        if (colaReproduccion.estaVacia()) {
             return;
         }
         Cancion siguiente = colaReproduccion.eliminarSiguiente();
@@ -329,17 +329,12 @@ public class Aplicacion {
         Usuario usuario = (Usuario) cuentaAutenticada;
 
         if (usuario.esDuenoDe(cancion)) {
-            reproducirAudioLocal(cancion.getRutaArchivoAudio(), 0); // Completa
+            reproducirAudioLocal(cancion.getRutaArchivoAudio(), 0);
         } else {
-            reproducirAudioLocal(cancion.getRutaArchivoAudio(), 30); // Preview
+            reproducirAudioLocal(cancion.getRutaArchivoAudio(), 30);
         }
     }
 
-    /**
-     * Instancia y reproduce el audio localmente sin necesidad de una clase externa.
-     * @param rutaArchivo La ruta del archivo .wav
-     * @param limiteSegundos 0 para reproducción completa, >0 para limitar el tiempo (preview)
-     */
     private void reproducirAudioLocal(String rutaArchivo, int limiteSegundos) {
         try {
             File archivo = new File(rutaArchivo);
@@ -353,22 +348,19 @@ public class Aplicacion {
             Clip clip = AudioSystem.getClip();
             clip.open(audioStream);
 
-            long duracionTotalMicrosegundos = clip.getMicrosecondLength();
-            long treintaSegundosMicrosegundos = 30_000_000L;
-
             if (limiteSegundos > 0) {
-                long maxInicio = Math.max(0, duracionTotalMicrosegundos - treintaSegundosMicrosegundos);
+                long maxInicio = Math.max(0, clip.getMicrosecondLength() - 30_000_000L);
                 long inicioAleatorio = (long) (Math.random() * maxInicio);
                 clip.setMicrosecondPosition(inicioAleatorio);
-
                 clip.start();
                 Thread.sleep(limiteSegundos * 1000);
-
                 if (clip.isRunning()) {
                     clip.stop();
                 }
             } else {
+                clip.setFramePosition(0);
                 clip.start();
+                Thread.sleep(100);
                 while (clip.isRunning()) {
                     Thread.sleep(1000);
                 }
@@ -388,5 +380,4 @@ public class Aplicacion {
             System.out.println("Error inesperado al reproducir: " + e.getMessage());
         }
     }
-
 }
